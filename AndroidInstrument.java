@@ -29,7 +29,7 @@ public class AndroidInstrument {
     private final static String USER_HOME = System.getenv("ANDROID_HOME");
     private static String androidJar = USER_HOME + "/platforms";
     static String testPath = System.getProperty("user.dir") + File.separator + "/apkdir";
-    static String apkPath = testPath + File.separator + "num.apk";
+    static String apkPath = testPath + File.separator + "beforinstrument.apk";
     static String outputPath = testPath + File.separator + "/Instrumented";
 
     public static void setupSoot(String androidJar, String apkPath, String outputPath) {
