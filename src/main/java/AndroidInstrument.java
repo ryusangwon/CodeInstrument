@@ -28,8 +28,8 @@ public class AndroidInstrument {
 
     private final static String USER_HOME = System.getenv("ANDROID_HOME");
     private static String androidJar = USER_HOME + "/platforms";
-    static String testPath = System.getProperty("user.dir") + File.separator + "/apkdir";
-    static String apkPath = testPath + File.separator + "beforinstrument.apk";
+    static String testPath = System.getProperty("user.dir") + File.separator + "apkdir";
+    static String apkPath = testPath + File.separator + "beforeInstrument.apk";
     static String outputPath = testPath + File.separator + "/Instrumented";
 
     public static void setupSoot(String androidJar, String apkPath, String outputPath) {
@@ -59,7 +59,7 @@ public class AndroidInstrument {
             @Override
             protected void internalTransform(final Body b, String phaseName, Map<String, String> options) {
                 JimpleBody body = (JimpleBody) b;
-                UnitPatchingChain units = b.getUnits();
+                PatchingChain units = b.getUnits();
                 List<Unit> generatedUnits = new ArrayList<>();
 
                 Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("java.io.PrintStream"));
