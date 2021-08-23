@@ -1,17 +1,24 @@
 import soot.*;
-import soot.jimple.JasminClass;
 import soot.jimple.Jimple;
 import soot.jimple.JimpleBody;
 import soot.jimple.StringConstant;
-import soot.options.Options;
 import soot.util.Chain;
-import soot.util.JasminOutputStream;
 
-import java.io.*;
+import java.io.File;
 import java.util.Arrays;
 
-public class Main {
-	public static void main(String[] args) throws FileNotFoundException, IOException {
+public class Instrument {
+
+	private static String USER_HOME = System.getenv("ANDROID_HOME");
+	private static String androidJar = USER_HOME + "/platforms";
+	static String testPath = System.getProperty("user.dir") + File.separator + "testPath";
+	static String apkPath = testPath + File.separator + "apk name";
+	static String outputPath = test + File.separator + "output dir name";
+
+	public static void main(String[] args)  {
+
+		SetUpSoot.setupSoot(androidJar, apkPath, outputPath);
+
 		Scene.v().loadClassAndSupport("java.lang.Object");
 		Scene.v().loadClassAndSupport("java.lang.System");
 
@@ -44,15 +51,7 @@ public class Main {
 		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), StringConstant.v("Hello World"))));
 		units.add(Jimple.v().newReturnVoidStmt());
 
-		String fileName = SourceLocator.v().getFileNameFor(sClass, Options.output_format_class);
-		OutputStream streamOut = new JasminOutputStream(
-				new FileOutputStream(fileName));
-		PrintWriter writerOut = new PrintWriter(
-				new OutputStreamWriter(streamOut));
 
-		JasminClass jasminClass = new soot.jimple.JasminClass(sClass);
-		writerOut.flush();
-		streamOut.close();
 
 	}
 
