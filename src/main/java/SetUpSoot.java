@@ -21,5 +21,8 @@ public class SetUpSoot {
 		Options.v().set_process_multiple_dex(true);
 		Options.v().set_output_dir(outputPath);
 		Scene.v().loadNecessaryClasses();
+
+		Scene.v().loadClassAndSupport("java.lang.Object");
+		Scene.v().loadClassAndSupport("java.lang.System");
 	}
 }

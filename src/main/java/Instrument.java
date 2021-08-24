@@ -9,40 +9,26 @@ import java.util.Arrays;
 
 public class Instrument {
 
-	private static String USER_HOME = System.getenv("ANDROID_HOME");
-	private static String androidJar = USER_HOME + "/platforms";
-	static String testPath = System.getProperty("user.dir") + File.separator + "testPath";
-	static String apkPath = testPath + File.separator + "apk name";
-	static String outputPath = test + File.separator + "output dir name";
+	public static class path {
+		private static String USER_HOME = System.getenv("ANDROID_HOME");
+		private static String androidJar = USER_HOME + "/platforms";
+		static String testPath = System.getProperty("user.dir") + File.separator + "testPath";
+		static String apkPath = testPath + File.separator + "apk name";
+		static String outputPath = testPath + File.separator + "output dir name";
+	}
 
 	public static void main(String[] args)  {
 
-		SetUpSoot.setupSoot(androidJar, apkPath, outputPath);
+		SetUpSoot.setupSoot(path.androidJar, path.apkPath, path.outputPath);
 
-		Scene.v().loadClassAndSupport("java.lang.Object");
-		Scene.v().loadClassAndSupport("java.lang.System");
-
-		SootClass sClass = new SootClass("HelloWorld", Modifier.PUBLIC);
-		sClass.setSuperclass(Scene.v().getSootClass("java.lang.Object"));
-		Scene.v().addClass(sClass);
-
-		SootMethod method = new SootMethod("main",
-				Arrays.asList(new Type[] {ArrayType.v(RefType.v("java.lang.String"), 1)}),
-				VoidType.v(), Modifier.PUBLIC | Modifier.STATIC);
-		sClass.addMethod(method);
-
+		SootMethod method = injectCode();
 		JimpleBody body = Jimple.v().newBody(method);
 		method.setActiveBody(body);
-		Chain units = body.getUnits();
 
-		Local arg = Jimple.v().newLocal("10", ArrayType.v(RefType.v("java.lang.string"), 1));
-		body.getLocals().add(arg);
+		Chain units = body.getUnits();
 
 		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("java.io.printStream"));
 		body.getLocals().add(tmpRef);
-
-		units.add(Jimple.v().newIdentityStmt(arg,
-				Jimple.v().newParameterRef(ArrayType.v(RefType.v("java.lang.String"), 1), 0)));
 
 		units.add(Jimple.v().newAssignStmt(tmpRef, Jimple.v().newStaticFieldRef(
 				Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())));
@@ -51,10 +37,32 @@ public class Instrument {
 		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), StringConstant.v("Hello World"))));
 		units.add(Jimple.v().newReturnVoidStmt());
 
-
-
 	}
 
 
+	static SootMethod injectCode(){
+		SootClass createClass = createClass();
+		return addBindServiceMethod(createClass);
+	}
+
+	static SootMethod addBindServiceMethod(SootClass createClass){
+
+		SootMethod bindServiceMethod = new SootMethod("bindService", Arrays.asList(new Type[]{}), VoidType.v() ,Modifier.PUBLIC);
+		return bindServiceMethod;
+	}
+
+	static SootMethod addAIDL(SootClass createClass){
+
+		SootMethod AIDL = new SootMethod("bindService", Arrays.asList(new Type[]{}), VoidType.v() ,Modifier.PUBLIC);
+		return AIDL;
+	}
+
+	static SootClass createClass(){
+		SootClass ServiceCallClass = new SootClass("ServiceCall", Modifier.PUBLIC);
+		ServiceCallClass.setSuperclass(Scene.v().getSootClass("java.lang.Object"));
+		ServiceCallClass.setApplicationClass();
+		Scene.v().addClass(ServiceCallClass);
+		return ServiceCallClass;
+	}
 }
 
