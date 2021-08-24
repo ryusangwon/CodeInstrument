@@ -5,7 +5,7 @@ import soot.jimple.StringConstant;
 import soot.util.Chain;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.Map;
 
 public class Instrument {
 
@@ -21,48 +21,58 @@ public class Instrument {
 
 		SetUpSoot.setupSoot(path.androidJar, path.apkPath, path.outputPath);
 
-		SootMethod method = injectCode();
-		JimpleBody body = Jimple.v().newBody(method);
-		method.setActiveBody(body);
+		SootClass instrumentClass = createClass();
+		SootMethod bindServiceMethod = addBindServiceMethod(instrumentClass);
+		SootMethod AIDLMethod = addAIDLMethod(instrumentClass);
 
-		Chain units = body.getUnits();
+		PackManager.v().getPack("jtp").add(
+				new Transform("jtp.myLogger", new BodyTransformer() {
+					@Override
+					protected void internalTransform(Body body, String s, Map<String, String> map) {
+						JimpleBody jimpleBody = (JimpleBody) body;
+						PatchingChain units = body.getUnits();
 
-		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("java.io.printStream"));
-		body.getLocals().add(tmpRef);
-
-		units.add(Jimple.v().newAssignStmt(tmpRef, Jimple.v().newStaticFieldRef(
-				Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())));
-
-		SootMethod toCall = Scene.v().getMethod("<java.io.PrintStream: void println(java.lang.String)>");
-		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), StringConstant.v("Hello World"))));
-		units.add(Jimple.v().newReturnVoidStmt());
+					}
+				})
+		);
 
 	}
 
+	static SootMethod addBindServiceMethod(SootClass instrumentClass){
+		SootMethod bindServiceMethod = Scene.v().getMethod("bindService()");
+		instrumentClass.addMethod(bindServiceMethod);
 
-	static SootMethod injectCode(){
-		SootClass createClass = createClass();
-		return addBindServiceMethod(createClass);
-	}
+		JimpleBody body = Jimple.v().newBody(bindServiceMethod);
+		PatchingChain units = body.getUnits();
 
-	static SootMethod addBindServiceMethod(SootClass createClass){
+		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("Context"));
 
-		SootMethod bindServiceMethod = new SootMethod("bindService", Arrays.asList(new Type[]{}), VoidType.v() ,Modifier.PUBLIC);
+		units.add(Jimple.v().newAssignStmt(tmpRef, Jimple.v()));
+
 		return bindServiceMethod;
 	}
 
-	static SootMethod addAIDL(SootClass createClass){
+	static SootMethod addAIDLMethod(SootClass instrumentClass){
+		SootMethod AIDLMethod = Scene.v().getMethod("serviceThreadStart()");
+		instrumentClass.addMethod(AIDLMethod);
 
-		SootMethod AIDL = new SootMethod("bindService", Arrays.asList(new Type[]{}), VoidType.v() ,Modifier.PUBLIC);
-		return AIDL;
+		JimpleBody body = Jimple.v().newBody(AIDLMethod);
+		PatchingChain units = body.getUnits();
+
+		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("IServiceInterface"));
+
+		units.add(Jimple.v().newLocal(tmpRef, Jimple.v()))
+
+		return AIDLMethod;
 	}
 
+
 	static SootClass createClass(){
-		SootClass ServiceCallClass = new SootClass("ServiceCall", Modifier.PUBLIC);
-		ServiceCallClass.setSuperclass(Scene.v().getSootClass("java.lang.Object"));
-		ServiceCallClass.setApplicationClass();
-		Scene.v().addClass(ServiceCallClass);
-		return ServiceCallClass;
+		SootClass instrumentClass = new SootClass("InstrumentClass", Modifier.PUBLIC);
+		instrumentClass.setSuperclass(Scene.v().getSootClass("java.lang.Object"));
+		instrumentClass.setApplicationClass();
+		Scene.v().addClass(instrumentClass);
+		return instrumentClass;
 	}
 }
 
