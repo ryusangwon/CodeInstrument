@@ -47,7 +47,8 @@ public class Instrument {
 
 		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("Context"));
 
-		units.add(Jimple.v().newAssignStmt(tmpRef, Jimple.v()));
+		units.add(Jimple.v().newAssignStmt(tmpRef, ));
+		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef,
 
 		return bindServiceMethod;
 	}
@@ -62,6 +63,7 @@ public class Instrument {
 		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("IServiceInterface"));
 
 		units.add(Jimple.v().newLocal(tmpRef, Jimple.v()))
+		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef,
 
 		return AIDLMethod;
 	}
