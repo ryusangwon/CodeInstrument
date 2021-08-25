@@ -65,8 +65,10 @@ public class Instrument {
 				bindServiceField.makeRef()));
 		InvokeStmt bindServiceStmt = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, bindServiceMethod.makeRef()));
 
+		generatedUnits.addAll(SetUpSoot.generateLogStmts((JimpleBody) body, "BindService method : " + body.getMethod().getSignature()));
 		generatedUnits.add(bindServiceAssignStmt);
 		generatedUnits.add(bindServiceStmt);
+
 
 		return generatedUnits;
 	}
@@ -85,6 +87,7 @@ public class Instrument {
 				AIDLField.makeRef()));
 		InvokeStmt AIDLStmt = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, AIDLMethod.makeRef()));
 
+		generatedUnits.addAll(SetUpSoot.generateLogStmts((JimpleBody) body, "AIDL method : " + body.getMethod().getSignature()));
 		generatedUnits.add(AIDLAssignStmt);
 		generatedUnits.add(AIDLStmt);
 
