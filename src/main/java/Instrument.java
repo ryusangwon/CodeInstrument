@@ -1,13 +1,17 @@
 import soot.*;
+import soot.jimple.AssignStmt;
+import soot.jimple.InvokeStmt;
 import soot.jimple.Jimple;
 import soot.jimple.JimpleBody;
-import soot.jimple.StringConstant;
-import soot.util.Chain;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class Instrument {
+
+	private static Object TAG = "<soot>";
 
 	public static class path {
 		private static String USER_HOME = System.getenv("ANDROID_HOME");
@@ -19,11 +23,9 @@ public class Instrument {
 
 	public static void main(String[] args)  {
 
-		SetUpSoot.setupSoot(path.androidJar, path.apkPath, path.outputPath);
+		String TAG = "<Instrumented>";
 
-		SootClass instrumentClass = createClass();
-		SootMethod bindServiceMethod = addBindServiceMethod(instrumentClass);
-		SootMethod AIDLMethod = addAIDLMethod(instrumentClass);
+		SetUpSoot.setupSoot(path.androidJar, path.apkPath, path.outputPath);
 
 		PackManager.v().getPack("jtp").add(
 				new Transform("jtp.myLogger", new BodyTransformer() {
@@ -32,40 +34,61 @@ public class Instrument {
 						JimpleBody jimpleBody = (JimpleBody) body;
 						PatchingChain units = body.getUnits();
 
+						SootClass instrumentClass = createClass();
+						List<Unit> bindServiceUnits = addBindServiceMethod(instrumentClass, jimpleBody);
+						List<Unit> AIDLUnits = addAIDLMethod(instrumentClass, jimpleBody);
+
+						units.insertBefore(bindServiceUnits, ((JimpleBody) body).getFirstNonIdentityStmt());
+						units.insertAfter(AIDLUnits, (Unit) bindServiceUnits);
+
+						jimpleBody.validate();
 					}
 				})
 		);
-
+		soot.Main.main(args);
+		PackManager.v().runPacks();
+		PackManager.v().writeOutput();
 	}
 
-	static SootMethod addBindServiceMethod(SootClass instrumentClass){
+	static List addBindServiceMethod(SootClass instrumentClass, Body body){
+
 		SootMethod bindServiceMethod = Scene.v().getMethod("bindService()");
 		instrumentClass.addMethod(bindServiceMethod);
 
-		JimpleBody body = Jimple.v().newBody(bindServiceMethod);
-		PatchingChain units = body.getUnits();
+		List<Unit> generatedUnits = new ArrayList<>();
 
 		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("Context"));
+		body.getLocals().add(tmpRef);
+		SootField bindServiceField = Scene.v().getField("Context");
 
-		units.add(Jimple.v().newAssignStmt(tmpRef, ));
-		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef,
+		AssignStmt bindServiceAssignStmt = Jimple.v().newAssignStmt(tmpRef, Jimple.v().newStaticFieldRef(
+				bindServiceField.makeRef()));
+		InvokeStmt bindServiceStmt = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, bindServiceMethod.makeRef()));
 
-		return bindServiceMethod;
+		generatedUnits.add(bindServiceAssignStmt);
+		generatedUnits.add(bindServiceStmt);
+
+		return generatedUnits;
 	}
 
-	static SootMethod addAIDLMethod(SootClass instrumentClass){
+	static List addAIDLMethod(SootClass instrumentClass, Body body){
 		SootMethod AIDLMethod = Scene.v().getMethod("serviceThreadStart()");
 		instrumentClass.addMethod(AIDLMethod);
 
-		JimpleBody body = Jimple.v().newBody(AIDLMethod);
-		PatchingChain units = body.getUnits();
+		List<Unit> generatedUnits = new ArrayList<>();
 
 		Local tmpRef = Jimple.v().newLocal("tmpRef", RefType.v("IServiceInterface"));
+		body.getLocals().add(tmpRef);
+		SootField AIDLField = Scene.v().getField("IServiceInterface");
 
-		units.add(Jimple.v().newLocal(tmpRef, Jimple.v()))
-		units.add(Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef,
+		AssignStmt AIDLAssignStmt = Jimple.v().newAssignStmt(tmpRef, Jimple.v().newStaticFieldRef(
+				AIDLField.makeRef()));
+		InvokeStmt AIDLStmt = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(tmpRef, AIDLMethod.makeRef()));
 
-		return AIDLMethod;
+		generatedUnits.add(AIDLAssignStmt);
+		generatedUnits.add(AIDLStmt);
+
+		return generatedUnits;
 	}
 
 
