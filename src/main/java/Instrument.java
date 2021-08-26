@@ -16,9 +16,9 @@ public class Instrument {
 	public static class path {
 		private static String USER_HOME = System.getenv("ANDROID_HOME");
 		private static String androidJar = USER_HOME + "/platforms";
-		static String testPath = System.getProperty("user.dir") + File.separator + "testPath";
-		static String apkPath = testPath + File.separator + "apk name";
-		static String outputPath = testPath + File.separator + "output dir name";
+		static String testPath = System.getProperty("user.dir") + File.separator + "apkdir";
+		static String apkPath = testPath + File.separator + "sootTest.apk";
+		static String outputPath = testPath + File.separator + "Instrumented";
 	}
 
 	public static void main(String[] args)  {
